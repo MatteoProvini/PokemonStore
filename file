@@ -1,0 +1,111 @@
+<form role="form" class="omb_loginForm" action="login.php" autocomplete="off" method="POST">
+    <div class="input-group">
+        <span class="input-group-addon"><i class="fa fa-user"></i></span>
+        <input type="email" class="form-control" name="email" placeholder="Email">
+    </div>
+    <span class="help-block"></span>
+
+    <div class="input-group">
+        <span class="input-group-addon"><i class="fa fa-lock"></i></span>
+        <input  type="password" class="form-control" name="password" placeholder="Password">
+    </div>
+    <span class="help-block"></span>
+
+    <button class="btn btn-lg btn-primary btn-block" name="submit" type="submit">Login</button>
+</form>
+login.php
+
+<?php
+    session_start();
+    if (isset($_POST['submit'], $_POST['email'], $_POST['password']))
+        {
+            try
+                {
+                    $email      = $_POST['email'];
+                    $password   = $_POST['password'];
+
+                    $dbhost     = "localhost";
+                    $dbname     = "abc";
+                    $dbuser     = "abc";
+                    $dbpass     = "pwd";
+
+                    $conn = new PDO("mysql:host=$dbhost;dbname=$dbname", $dbuser, $dbpass);
+                    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+                    $sql = "SELECT * FROM register WHERE `email` = :email AND `password` = :password ";
+
+                    $stmt = $conn->prepare($sql);
+                    $stmt->execute(array(':email' => $_POST['email'], ':password'=> $_POST['password']));
+
+                    $num=$stmt->rowCount();
+                    if($num > 0)
+                        {
+                            header("location:dashboard.php");
+                        }
+                    else
+                        {
+                            header("location:login_form.html");
+                        }
+
+                }
+            catch (Exception $e)
+                {
+                    echo 'Caught exception: ',  $e->getMessage(), "\n";
+                }
+        }
+?>
+session.php
+
+<?php
+    $dbhost     = "localhost";
+    $dbname     = "abc";
+    $dbuser     = "abc";
+    $dbpass     = "pwd";
+
+    $conn = new PDO("mysql:host=$dbhost;dbname=$dbname", $dbuser, $dbpass);
+
+    session_start();
+    $user_check=$_SESSION['login_user'];
+
+    $result = $conn->prepare("SELECT * FROM register WHERE email= :$user_check");
+    $result->execute(array(":usercheck"=>$user_check));
+
+    $row = $result->fetch(PDO::FETCH_ASSOC);
+
+    $login_session =$row['email'];
+    $user_id =$row['id'];
+    $user_passwords = $row['password'];
+
+    if(!isset($login_session))
+        {
+            $conn = null;
+            header('Location: login_form.html');
+        }
+?>
+dashboard.php
+
+<?php
+    include('session.php');
+?>
+<!DOCTYPE html>
+<html>
+<head>
+<title>Your Home Page</title>
+<link href="style.css" rel="stylesheet" type="text/css">
+</head>
+<body>
+    <div id="profile">
+        <b id="welcome">Welcome : <i><?php echo $login_session; ?></i></b>
+        <b id="logout"><a href="logout.php">Log Out</a></b>
+    </div>
+</body>
+</html>
+logout.php
+
+<?php
+session_start();
+if(session_destroy())
+    {
+        header("Location: index.php");
+    }
+?>
